@@ -3,6 +3,11 @@ package com.ruoyi.web.controller.system;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+
+import com.alibaba.fastjson2.JSON;
+import com.ruoyi.common.utils.LoginHelper;
+import com.ruoyi.framework.web.domain.LoginVo;
+import com.ruoyi.framework.web.service.IAuthStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,13 +21,14 @@ import com.ruoyi.common.core.domain.model.LoginBody;
 import com.ruoyi.common.core.domain.model.LoginUser;
 import com.ruoyi.common.core.text.Convert;
 import com.ruoyi.common.utils.DateUtils;
-import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.framework.web.service.SysLoginService;
 import com.ruoyi.framework.web.service.SysPermissionService;
 import com.ruoyi.framework.web.service.TokenService;
 import com.ruoyi.system.service.ISysConfigService;
 import com.ruoyi.system.service.ISysMenuService;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * 登录验证
@@ -40,9 +46,9 @@ public class SysLoginController
 
     @Autowired
     private SysPermissionService permissionService;
-
-    @Autowired
-    private TokenService tokenService;
+//
+//    @Autowired
+//    private TokenService tokenService;
 
     @Autowired
     private ISysConfigService configService;
@@ -54,14 +60,32 @@ public class SysLoginController
      * @return 结果
      */
     @PostMapping("/login")
-    public AjaxResult login(@RequestBody LoginBody loginBody)
-    {
+    public AjaxResult login(@RequestBody LoginBody loginBody) {
         AjaxResult ajax = AjaxResult.success();
+
+
+        // 登录
+        LoginVo loginVo = IAuthStrategy.login(JSON.toJSONString(loginBody), "password");
+
+
         // 生成令牌
-        String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode(),
-                loginBody.getUuid());
-        ajax.put(Constants.TOKEN, token);
+//        String token = loginService.login(loginBody.getUsername(), loginBody.getPassword(), loginBody.getCode(),
+//                loginBody.getUuid());
+        ajax.put(Constants.TOKEN, loginVo.getAccessToken());
         return ajax;
+    }
+
+    @PostMapping("/logout")
+    public AjaxResult logout(HttpServletRequest request) {
+        loginService.logout();
+
+
+
+//        LoginUser loginUser = tokenService.getLoginUser(request);
+//        if (Objects.nonNull(loginUser)) {
+//            tokenService.delLoginUser(loginUser.getToken());
+//        }
+        return AjaxResult.success("退出成功！");
     }
 
     /**
@@ -72,7 +96,7 @@ public class SysLoginController
     @GetMapping("getInfo")
     public AjaxResult getInfo()
     {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
+       /* LoginUser loginUser = LoginHelper.getLoginUser();
         SysUser user = loginUser.getUser();
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
@@ -82,7 +106,16 @@ public class SysLoginController
         {
             loginUser.setPermissions(permissions);
             tokenService.refreshToken(loginUser);
-        }
+        }*/
+
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        SysUser user = loginUser.getUser();
+        // 角色集合
+        Set<String> roles = permissionService.getRolePermission(user);
+        // 权限集合
+        Set<String> permissions = permissionService.getMenuPermission(user);
+
+
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
@@ -100,7 +133,11 @@ public class SysLoginController
     @GetMapping("getRouters")
     public AjaxResult getRouters()
     {
-        Long userId = SecurityUtils.getUserId();
+        //        LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        // 用户信息
+        SysUser user = loginUser.getUser();
+        Long userId = user.getUserId();
         List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
         return AjaxResult.success(menuService.buildMenus(menus));
     }

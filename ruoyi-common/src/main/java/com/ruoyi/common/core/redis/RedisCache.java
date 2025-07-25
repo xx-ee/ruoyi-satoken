@@ -265,4 +265,8 @@ public class RedisCache
     {
         return redisTemplate.keys(pattern);
     }
+
+    public long getTimeToLive(String key) {
+        return redisTemplate.getExpire(key);
+    }
 }

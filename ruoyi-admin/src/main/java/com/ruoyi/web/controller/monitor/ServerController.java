@@ -1,11 +1,11 @@
 package com.ruoyi.web.controller.monitor;
 
-import org.springframework.security.access.prepost.PreAuthorize;
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.ruoyi.common.core.domain.AjaxResult;
+import com.ruoyi.framework.web.domain.Server;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.framework.web.domain.Server;
 
 /**
  * 服务器监控
@@ -16,7 +16,7 @@ import com.ruoyi.framework.web.domain.Server;
 @RequestMapping("/monitor/server")
 public class ServerController
 {
-    @PreAuthorize("@ss.hasPermi('monitor:server:list')")
+    @SaCheckPermission("monitor:server:list")
     @GetMapping()
     public AjaxResult getInfo() throws Exception
     {

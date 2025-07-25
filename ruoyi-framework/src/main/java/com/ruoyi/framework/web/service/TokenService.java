@@ -1,37 +1,15 @@
 package com.ruoyi.framework.web.service;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import com.ruoyi.common.constant.CacheConstants;
-import com.ruoyi.common.constant.Constants;
-import com.ruoyi.common.core.domain.model.LoginUser;
-import com.ruoyi.common.core.redis.RedisCache;
-import com.ruoyi.common.utils.ServletUtils;
-import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.common.utils.ip.AddressUtils;
-import com.ruoyi.common.utils.ip.IpUtils;
-import com.ruoyi.common.utils.uuid.IdUtils;
-import eu.bitwalker.useragentutils.UserAgent;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
 /**
  * token验证处理
  * 
  * @author ruoyi
  */
-@Component
+//@Component
+    @Deprecated
 public class TokenService
 {
-    private static final Logger log = LoggerFactory.getLogger(TokenService.class);
+  /*  private static final Logger log = LoggerFactory.getLogger(TokenService.class);
 
     // 令牌自定义标识
     @Value("${token.header}")
@@ -54,11 +32,11 @@ public class TokenService
     @Autowired
     private RedisCache redisCache;
 
-    /**
+    *//**
      * 获取用户身份信息
      * 
      * @return 用户信息
-     */
+     *//*
     public LoginUser getLoginUser(HttpServletRequest request)
     {
         // 获取请求携带的令牌
@@ -82,9 +60,9 @@ public class TokenService
         return null;
     }
 
-    /**
+    *//**
      * 设置用户身份信息
-     */
+     *//*
     public void setLoginUser(LoginUser loginUser)
     {
         if (StringUtils.isNotNull(loginUser) && StringUtils.isNotEmpty(loginUser.getToken()))
@@ -93,9 +71,9 @@ public class TokenService
         }
     }
 
-    /**
+    *//**
      * 删除用户身份信息
-     */
+     *//*
     public void delLoginUser(String token)
     {
         if (StringUtils.isNotEmpty(token))
@@ -105,12 +83,12 @@ public class TokenService
         }
     }
 
-    /**
+    *//**
      * 创建令牌
      * 
      * @param loginUser 用户信息
      * @return 令牌
-     */
+     *//*
     public String createToken(LoginUser loginUser)
     {
         String token = IdUtils.fastUUID();
@@ -124,12 +102,12 @@ public class TokenService
         return createToken(claims);
     }
 
-    /**
+    *//**
      * 验证令牌有效期，相差不足20分钟，自动刷新缓存
      * 
      * @param loginUser 登录信息
      * @return 令牌
-     */
+     *//*
     public void verifyToken(LoginUser loginUser)
     {
         long expireTime = loginUser.getExpireTime();
@@ -140,11 +118,11 @@ public class TokenService
         }
     }
 
-    /**
+    *//**
      * 刷新令牌有效期
      * 
      * @param loginUser 登录信息
-     */
+     *//*
     public void refreshToken(LoginUser loginUser)
     {
         loginUser.setLoginTime(System.currentTimeMillis());
@@ -154,11 +132,11 @@ public class TokenService
         redisCache.setCacheObject(userKey, loginUser, expireTime, TimeUnit.MINUTES);
     }
 
-    /**
+    *//**
      * 设置用户代理信息
      * 
      * @param loginUser 登录信息
-     */
+     *//*
     public void setUserAgent(LoginUser loginUser)
     {
         UserAgent userAgent = UserAgent.parseUserAgentString(ServletUtils.getRequest().getHeader("User-Agent"));
@@ -169,12 +147,12 @@ public class TokenService
         loginUser.setOs(userAgent.getOperatingSystem().getName());
     }
 
-    /**
+    *//**
      * 从数据声明生成令牌
      *
      * @param claims 数据声明
      * @return 令牌
-     */
+     *//*
     private String createToken(Map<String, Object> claims)
     {
         String token = Jwts.builder()
@@ -183,12 +161,12 @@ public class TokenService
         return token;
     }
 
-    /**
+    *//**
      * 从令牌中获取数据声明
      *
      * @param token 令牌
      * @return 数据声明
-     */
+     *//*
     private Claims parseToken(String token)
     {
         return Jwts.parser()
@@ -197,24 +175,24 @@ public class TokenService
                 .getBody();
     }
 
-    /**
+    *//**
      * 从令牌中获取用户名
      *
      * @param token 令牌
      * @return 用户名
-     */
+     *//*
     public String getUsernameFromToken(String token)
     {
         Claims claims = parseToken(token);
         return claims.getSubject();
     }
 
-    /**
+    *//**
      * 获取请求token
      *
      * @param request
      * @return token
-     */
+     *//*
     private String getToken(HttpServletRequest request)
     {
         String token = request.getHeader(header);
@@ -228,5 +206,5 @@ public class TokenService
     private String getTokenKey(String uuid)
     {
         return CacheConstants.LOGIN_TOKEN_KEY + uuid;
-    }
+    }*/
 }
