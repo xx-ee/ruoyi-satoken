@@ -23,6 +23,7 @@ import com.ruoyi.common.annotation.Anonymous;
  * 
  * @author ruoyi
  */
+/*
 @Configuration
 public class PermitAllUrlProperties implements InitializingBean, ApplicationContextAware
 {
@@ -71,3 +72,4 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationCont
         this.urls = urls;
     }
 }
+*/

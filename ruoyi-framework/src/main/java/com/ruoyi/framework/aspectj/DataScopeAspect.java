@@ -1,21 +1,21 @@
 package com.ruoyi.framework.aspectj;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.springframework.stereotype.Component;
 import com.ruoyi.common.annotation.DataScope;
-import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.domain.model.LoginUser;
-import com.ruoyi.common.core.text.Convert;
-import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.LoginHelper;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.framework.security.context.PermissionContextHolder;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.Signature;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Method;
 
 /**
  * 数据过滤处理
@@ -56,14 +56,20 @@ public class DataScopeAspect
      */
     public static final String DATA_SCOPE = "dataScope";
 
-    @Before("@annotation(controllerDataScope)")
-    public void doBefore(JoinPoint point, DataScope controllerDataScope) throws Throwable
+    // 配置织入点
+    @Pointcut("@annotation(com.ruoyi.common.annotation.DataScope)")
+    public void dataScopePointCut()
     {
-        clearDataScope(point);
-        handleDataScope(point, controllerDataScope);
     }
 
-    protected void handleDataScope(final JoinPoint joinPoint, DataScope controllerDataScope)
+    @Before("dataScopePointCut()")
+    public void doBefore(JoinPoint point) throws Throwable
+    {
+        clearDataScope(point);
+        handleDataScope(point);
+    }
+
+/*    protected void handleDataScope(final JoinPoint joinPoint, DataScope controllerDataScope)
     {
         // 获取当前的用户
         LoginUser loginUser = SecurityUtils.getLoginUser();
@@ -77,57 +83,54 @@ public class DataScopeAspect
                 dataScopeFilter(joinPoint, currentUser, controllerDataScope.deptAlias(), controllerDataScope.userAlias(), permission);
             }
         }
+    }*/
+protected void handleDataScope(final JoinPoint joinPoint)
+{
+    // 获得注解
+    DataScope controllerDataScope = getAnnotationLog(joinPoint);
+    if (controllerDataScope == null)
+    {
+        return;
     }
+    // 获取当前的用户
+//        LoginUser loginUser = SpringUtils.getBean(TokenService.class).getLoginUser(ServletUtils.getRequest());
+    LoginUser loginUser = LoginHelper.getLoginUser();
+    if (StringUtils.isNotNull(loginUser))
+    {
+        SysUser currentUser = loginUser.getUser();
+        // 如果是超级管理员，则不过滤数据
+        if (StringUtils.isNotNull(currentUser) && !currentUser.isAdmin())
+        {
+            dataScopeFilter(joinPoint, currentUser, controllerDataScope.deptAlias(),
+                    controllerDataScope.userAlias());
+        }
+    }
+}
 
     /**
      * 数据范围过滤
      *
      * @param joinPoint 切点
      * @param user 用户
-     * @param deptAlias 部门别名
-     * @param userAlias 用户别名
-     * @param permission 权限字符
+     * @param userAlias 别名
      */
-    public static void dataScopeFilter(JoinPoint joinPoint, SysUser user, String deptAlias, String userAlias, String permission)
+    public static void dataScopeFilter(JoinPoint joinPoint, SysUser user, String deptAlias, String userAlias)
     {
         StringBuilder sqlString = new StringBuilder();
-        List<String> conditions = new ArrayList<String>();
-        List<String> scopeCustomIds = new ArrayList<String>();
-        user.getRoles().forEach(role -> {
-            if (DATA_SCOPE_CUSTOM.equals(role.getDataScope()) && StringUtils.equals(role.getStatus(), UserConstants.ROLE_NORMAL) && StringUtils.containsAny(role.getPermissions(), Convert.toStrArray(permission)))
-            {
-                scopeCustomIds.add(Convert.toStr(role.getRoleId()));
-            }
-        });
 
         for (SysRole role : user.getRoles())
         {
             String dataScope = role.getDataScope();
-            if (conditions.contains(dataScope) || StringUtils.equals(role.getStatus(), UserConstants.ROLE_DISABLE))
-            {
-                continue;
-            }
-            if (!StringUtils.containsAny(role.getPermissions(), Convert.toStrArray(permission)))
-            {
-                continue;
-            }
             if (DATA_SCOPE_ALL.equals(dataScope))
             {
                 sqlString = new StringBuilder();
-                conditions.add(dataScope);
                 break;
             }
             else if (DATA_SCOPE_CUSTOM.equals(dataScope))
             {
-                if (scopeCustomIds.size() > 1)
-                {
-                    // 多个自定数据权限使用in查询，避免多次拼接。
-                    sqlString.append(StringUtils.format(" OR {}.dept_id IN ( SELECT dept_id FROM sys_role_dept WHERE role_id in ({}) ) ", deptAlias, String.join(",", scopeCustomIds)));
-                }
-                else
-                {
-                    sqlString.append(StringUtils.format(" OR {}.dept_id IN ( SELECT dept_id FROM sys_role_dept WHERE role_id = {} ) ", deptAlias, role.getRoleId()));
-                }
+                sqlString.append(StringUtils.format(
+                        " OR {}.dept_id IN ( SELECT dept_id FROM sys_role_dept WHERE role_id = {} ) ", deptAlias,
+                        role.getRoleId()));
             }
             else if (DATA_SCOPE_DEPT.equals(dataScope))
             {
@@ -135,7 +138,9 @@ public class DataScopeAspect
             }
             else if (DATA_SCOPE_DEPT_AND_CHILD.equals(dataScope))
             {
-                sqlString.append(StringUtils.format(" OR {}.dept_id IN ( SELECT dept_id FROM sys_dept WHERE dept_id = {} or find_in_set( {} , ancestors ) )", deptAlias, user.getDeptId(), user.getDeptId()));
+                sqlString.append(StringUtils.format(
+                        " OR {}.dept_id IN ( SELECT dept_id FROM sys_dept WHERE dept_id = {} or find_in_set( {} , ancestors ) )",
+                        deptAlias, user.getDeptId(), user.getDeptId()));
             }
             else if (DATA_SCOPE_SELF.equals(dataScope))
             {
@@ -146,16 +151,9 @@ public class DataScopeAspect
                 else
                 {
                     // 数据权限为仅本人且没有userAlias别名不查询任何数据
-                    sqlString.append(StringUtils.format(" OR {}.dept_id = 0 ", deptAlias));
+                    sqlString.append(" OR 1=0 ");
                 }
             }
-            conditions.add(dataScope);
-        }
-
-        // 角色都不包含传递过来的权限字符，这个时候sqlString也会为空，所以要限制一下,不查询任何数据
-        if (StringUtils.isEmpty(conditions))
-        {
-            sqlString.append(StringUtils.format(" OR {}.dept_id = 0 ", deptAlias));
         }
 
         if (StringUtils.isNotBlank(sqlString.toString()))
@@ -167,6 +165,22 @@ public class DataScopeAspect
                 baseEntity.getParams().put(DATA_SCOPE, " AND (" + sqlString.substring(4) + ")");
             }
         }
+    }
+
+    /**
+     * 是否存在注解，如果存在就获取
+     */
+    private DataScope getAnnotationLog(JoinPoint joinPoint)
+    {
+        Signature signature = joinPoint.getSignature();
+        MethodSignature methodSignature = (MethodSignature) signature;
+        Method method = methodSignature.getMethod();
+
+        if (method != null)
+        {
+            return method.getAnnotation(DataScope.class);
+        }
+        return null;
     }
 
     /**

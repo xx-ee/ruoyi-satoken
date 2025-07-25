@@ -1,14 +1,19 @@
 package com.ruoyi.system.domain;
 
+import lombok.Data;
+import lombok.ToString;
+
 /**
  * 当前在线会话
  * 
  * @author ruoyi
  */
+@Data
+@ToString
 public class SysUserOnline
 {
     /** 会话编号 */
-    private String tokenId;
+    private Object tokenId;
 
     /** 部门名称 */
     private String deptName;
@@ -31,7 +36,7 @@ public class SysUserOnline
     /** 登录时间 */
     private Long loginTime;
 
-    public String getTokenId()
+/*    public String getTokenId()
     {
         return tokenId;
     }
@@ -109,5 +114,5 @@ public class SysUserOnline
     public void setLoginTime(Long loginTime)
     {
         this.loginTime = loginTime;
-    }
+    }*/
 }
